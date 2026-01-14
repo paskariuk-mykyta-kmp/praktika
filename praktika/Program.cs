@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using praktika.Models;
-
-namespace praktika
+using praktika.Models;  
+namespace praktika 
 {
     class Program
     {
@@ -13,57 +12,81 @@ namespace praktika
 
         static void Main(string[] args)
         {
+          
             Console.OutputEncoding = Encoding.UTF8;
-            
             Console.InputEncoding = Encoding.UTF8;
 
+           
             FileManager.CheckFiles();
-
             products = FileManager.ReadProducts();
 
+            
             while (currentUser == null)
             {
                 Console.Clear();
-                Console.WriteLine("=== ВХІД ===");
-                Console.WriteLine("1. Увійти");
-                Console.WriteLine("2. Реєстрація");
-                Console.WriteLine("0. Вихід");
-                Console.Write("Вибір: ");
+                DrawHeader("ВХІД У СИСТЕМУ");
+                Console.WriteLine("\n  1. Увійти");
+                Console.WriteLine("  2. Реєстрація");
+                Console.WriteLine("  0. Вихід");
+                Console.Write("\n  Ваш вибір > ");
                 string k = Console.ReadLine();
 
                 if (k == "1") Login();
                 else if (k == "2") Register();
                 else if (k == "0") return;
-                else Console.WriteLine("Невірний вибір.");
+                else PrintError("Невірний вибір.");
             }
 
+            
             bool work = true;
             while (work)
             {
                 Console.Clear();
-                Console.WriteLine($"Привіт, {currentUser.Username}! Роль: {(currentUser.IsAdmin ? "Адмін" : "Клієнт")}");
-                Console.WriteLine($"Товарів: {products.Count}");
-                if (!currentUser.IsAdmin) Console.WriteLine($"В кошику: {cart.Count}");
-                Console.WriteLine("----------------");
+                DrawHeader($"МАГАЗИН | 👤 {currentUser.Username}");
 
-                Console.WriteLine("1. Показати товари");
-                Console.WriteLine("2. Пошук");
-                Console.WriteLine("3. Сортування (за ціною)");
-                Console.WriteLine("4. Статистика");
+                
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.WriteLine($"  Роль: {(currentUser.IsAdmin ? "АДМІН" : "КЛІЄНТ")}");
+                Console.Write($"  Товарів у базі: {products.Count}");
+
+                if (!currentUser.IsAdmin)
+                {
+                    Console.Write(" | ");
+                    Console.ForegroundColor = cart.Count > 0 ? ConsoleColor.Green : ConsoleColor.DarkGray;
+                    Console.WriteLine($"У кошику: {cart.Count}");
+                }
+                else Console.WriteLine();
+
+                Console.ResetColor();
+                Console.WriteLine();
+
+                
+                PrintMenuOption("1", "📋 Таблиця товарів");
+                PrintMenuOption("2", "🔍 Пошук");
+                PrintMenuOption("3", "💰 Сортування (за ціною)");
+                PrintMenuOption("4", "📊 Статистика");
+
+                if (!currentUser.IsAdmin)
+                {
+                    Console.WriteLine();
+                    WriteColor("  --- ПОКУПКИ ---", ConsoleColor.Cyan);
+                    Console.WriteLine();
+                    PrintMenuOption("5", "🛒 Додати в кошик");
+                    PrintMenuOption("6", "💳 Оформити замовлення");
+                }
 
                 if (currentUser.IsAdmin)
                 {
-                    Console.WriteLine("5. Додати товар");
-                    Console.WriteLine("6. Видалити товар");
-                }
-                else
-                {
-                    Console.WriteLine("5. Додати в кошик");
-                    Console.WriteLine("6. Оформити покупку");
+                    Console.WriteLine();
+                    WriteColor("  --- АДМІН ПАНЕЛЬ ---", ConsoleColor.DarkYellow);
+                    Console.WriteLine();
+                    PrintMenuOption("5", "➕ Додати товар");
+                    PrintMenuOption("6", "❌ Видалити товар");
                 }
 
-                Console.WriteLine("0. Вихід");
-                Console.Write("\nВаш вибір: ");
+                Console.WriteLine();
+                PrintMenuOption("0", "🚪 Вихід");
+                Console.Write("\nВаш вибір > ");
 
                 string choice = Console.ReadLine();
 
@@ -82,15 +105,21 @@ namespace praktika
                         else Buy();
                         break;
                     case "0": work = false; break;
+                    default: PrintError("Невірний вибір!"); Console.ReadKey(); break;
                 }
             }
         }
 
+       
+
         static void Login()
         {
-            Console.Write("Логін: ");
+            DrawHeader("АВТОРИЗАЦІЯ");
+            Console.WriteLine("\n(admin/admin) або (user/1234)\n");
+
+            WriteColor("  Логін:  ", ConsoleColor.Cyan);
             string l = Console.ReadLine();
-            Console.Write("Пароль: ");
+            WriteColor("  Пароль: ", ConsoleColor.Cyan);
             string p = Console.ReadLine();
 
             List<User> allUsers = FileManager.ReadUsers();
@@ -109,14 +138,15 @@ namespace praktika
 
             if (!found)
             {
-                Console.WriteLine("Помилка входу! Натисніть Enter.");
-                Console.ReadLine();
+                PrintError("Невірний логін або пароль!");
+                Console.ReadKey();
             }
         }
 
         static void Register()
         {
-            Console.Write("Новий логін: ");
+            DrawHeader("РЕЄСТРАЦІЯ");
+            WriteColor("  Новий логін: ", ConsoleColor.Cyan);
             string l = Console.ReadLine();
 
             List<User> all = FileManager.ReadUsers();
@@ -124,48 +154,78 @@ namespace praktika
             {
                 if (u.Username == l)
                 {
-                    Console.WriteLine("Такий юзер вже є.");
-                    Console.ReadLine();
+                    PrintError("Такий користувач вже існує.");
+                    Console.ReadKey();
                     return;
                 }
             }
 
-            Console.Write("Новий пароль: ");
+            WriteColor("  Новий пароль: ", ConsoleColor.Cyan);
             string p = Console.ReadLine();
 
             FileManager.AddUserToFile(l, p, false);
-            Console.WriteLine("Успішно! Тепер увійдіть.");
-            Console.ReadLine();
+            PrintSuccess("Успішно! Тепер увійдіть.");
+            Console.ReadKey();
         }
+
+        
 
         static void ShowList()
         {
-            Console.Clear();
-            Console.WriteLine("ID | Тип | Назва | Ціна | Інфо");
+            DrawHeader("АСОРТИМЕНТ");
+            
+            Console.BackgroundColor = ConsoleColor.DarkBlue;
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(" {0,-4} | {1,-10} | {2,-25} | {3,-8} | {4,-30}", "ID", "Тип", "Назва", "Ціна", "Інфо");
+            Console.ResetColor();
+
             foreach (var p in products)
             {
-                Console.WriteLine($"{p.Id} | {p.GetTypeString()} | {p.Title} | {p.Price} | {p.GetDetails()}");
+                Console.Write(" ");
+                WriteColor($"{p.Id,-4}", ConsoleColor.DarkGray);
+                Console.Write(" | ");
+                Console.Write($"{p.GetTypeString(),-10}");
+                Console.Write(" | ");
+
+                string title = p.Title.Length > 22 ? p.Title.Substring(0, 19) + "..." : p.Title;
+                WriteColor($"{title,-25}", ConsoleColor.White);
+
+                Console.Write(" | ");
+                WriteColor($"{p.Price,8} ₴", ConsoleColor.Green);
+                Console.Write(" | ");
+                WriteColor($"{p.GetDetails(),-30}", ConsoleColor.Gray);
+                Console.WriteLine();
             }
-            Console.WriteLine("\nEnter для далі...");
+            Console.WriteLine("\nНатисніть Enter...");
             Console.ReadLine();
         }
 
         static void Search()
         {
+            DrawHeader("ПОШУК");
             Console.Write("Введіть текст: ");
             string q = Console.ReadLine().ToLower();
+            Console.WriteLine();
+
+            bool found = false;
             foreach (var p in products)
             {
                 if (p.Title.ToLower().Contains(q))
-                    Console.WriteLine($"{p.Title} - {p.Price}");
+                {
+                    Console.Write(" -> ");
+                    WriteColor($"{p.Title}", ConsoleColor.White);
+                    WriteColor($" ({p.Price} ₴)\n", ConsoleColor.Green);
+                    found = true;
+                }
             }
+            if (!found) PrintError("Нічого не знайдено.");
             Console.ReadLine();
         }
 
         static void Sort()
         {
             products.Sort((a, b) => a.Price.CompareTo(b.Price));
-            Console.WriteLine("Відсортовано!");
+            PrintSuccess("Список відсортовано за ціною!");
             Console.ReadLine();
         }
 
@@ -183,16 +243,25 @@ namespace praktika
                 if (p.Price > max) max = p.Price;
             }
 
-            Console.WriteLine($"Всього: {products.Count}");
-            Console.WriteLine($"Сума: {sum}");
-            Console.WriteLine($"Середня: {sum / products.Count}");
-            Console.WriteLine($"Мін: {min}, Макс: {max}");
+            DrawHeader("СТАТИСТИКА");
+            Console.WriteLine($"  Всього товарів:    {products.Count}");
+            Console.Write($"  Загальна вартість: "); WriteColor($"{sum} ₴\n", ConsoleColor.Green);
+            Console.Write($"  Середня ціна:      "); WriteColor($"{(sum / products.Count):F2} ₴\n", ConsoleColor.Yellow);
+            Console.Write($"  Найдешевший:       "); WriteColor($"{min} ₴\n", ConsoleColor.Cyan);
+            Console.Write($"  Найдорожчий:       "); WriteColor($"{max} ₴\n", ConsoleColor.Red);
             Console.ReadLine();
         }
 
+      
+
         static void AddProd()
         {
-            Console.WriteLine("Тип: 1-Книга, 2-Манга, 3-Закладка, 4-Листівка");
+            DrawHeader("ДОДАВАННЯ");
+            Console.WriteLine("1. Книга");
+            Console.WriteLine("2. Манга");
+            Console.WriteLine("3. Закладка");
+            Console.WriteLine("4. Листівка");
+            Console.Write("Тип > ");
             string t = Console.ReadLine();
 
             try
@@ -231,19 +300,17 @@ namespace praktika
                 {
                     products.Add(newItem);
                     FileManager.SaveAllProducts(products);
-                    Console.WriteLine("Збережено!");
+                    PrintSuccess("Товар збережено у файл!");
                 }
             }
-            catch
-            {
-                Console.WriteLine("Помилка введення.");
-            }
+            catch { PrintError("Помилка даних."); }
             Console.ReadLine();
         }
 
         static void DelProd()
         {
-            Console.Write("Введіть ID: ");
+            ShowList(); 
+            Console.Write("Введіть ID для видалення: ");
             int id = int.Parse(Console.ReadLine());
 
             Product toDel = null;
@@ -256,29 +323,32 @@ namespace praktika
             {
                 products.Remove(toDel);
                 FileManager.SaveAllProducts(products);
-                Console.WriteLine("Видалено.");
+                PrintSuccess("Видалено.");
             }
             else
             {
-                Console.WriteLine("Не знайдено.");
+                PrintError("Не знайдено.");
             }
             Console.ReadLine();
         }
 
+        
+
         static void ToCart()
         {
-            Console.Write("ID товару: ");
+            ShowList();
+            Console.Write("Введіть ID товару: ");
             int id = int.Parse(Console.ReadLine());
             foreach (var p in products)
             {
                 if (p.Id == id)
                 {
                     cart.Add(p);
-                    Console.WriteLine("Додано в кошик.");
+                    PrintSuccess("Додано в кошик.");
                     return;
                 }
             }
-            Console.WriteLine("Нема такого ID.");
+            PrintError("Нема такого ID.");
             Console.ReadLine();
         }
 
@@ -286,25 +356,75 @@ namespace praktika
         {
             if (cart.Count == 0)
             {
-                Console.WriteLine("Кошик пустий.");
+                PrintError("Кошик порожній.");
                 Console.ReadLine();
                 return;
             }
 
+            DrawHeader("ВАШ ЧЕК");
             double total = 0;
-            Console.WriteLine("ЧЕК:");
+            Console.WriteLine(new string('-', 40));
             foreach (var p in cart)
             {
-                Console.WriteLine($"{p.Title} - {p.Price}");
+                Console.WriteLine($" {p.Title,-25} ... {p.Price} ₴");
                 total += p.Price;
             }
-            Console.WriteLine($"РАЗОМ: {total}");
+            Console.WriteLine(new string('-', 40));
+            WriteColor($" РАЗОМ ДО СПЛАТИ: {total} ₴", ConsoleColor.Green);
 
             FileManager.AddOrder(currentUser.Username, total);
 
             cart.Clear();
-            Console.WriteLine("Дякуємо!");
+            Console.WriteLine("\n\n Дякуємо за покупку!");
             Console.ReadLine();
+        }
+
+        
+
+        static void DrawHeader(string title)
+        {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
+            Console.Write("║");
+            int spaces = (60 - title.Length) / 2;
+            Console.Write(new string(' ', spaces));
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write(title);
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.Write(new string(' ', 60 - spaces - title.Length));
+            Console.WriteLine("║");
+            Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
+            Console.ResetColor();
+        }
+
+        static void WriteColor(string text, ConsoleColor color)
+        {
+            Console.ForegroundColor = color;
+            Console.Write(text);
+            Console.ResetColor();
+        }
+
+        static void PrintError(string msg)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"\n [X] ПОМИЛКА: {msg}");
+            Console.ResetColor();
+        }
+
+        static void PrintSuccess(string msg)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"\n [OK] {msg}");
+            Console.ResetColor();
+        }
+
+        static void PrintMenuOption(string key, string text)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write($"  [{key}] ");
+            Console.ResetColor();
+            Console.WriteLine(text);
         }
     }
 }
